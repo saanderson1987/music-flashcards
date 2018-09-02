@@ -1,0 +1,119 @@
+<h1>Music Flashcards</h1>
+<p>Type the correct note displayed.</p>
+<button id='startBtn'>Start</button>
+<button id='stopBtn'>Stop</button>
+<p>Timer: <span id='mins'></span><span id='secs'>0s</span></p>
+<p>Score: <span id='scoreText'>0</span></p>
+<br>
+<div id='correct-container'>
+  <h2 id='isCorrectText'></h2>
+  <h2 id='instruction'></h2>
+</div>
+<img id='flashcard'/>
+<script src="/socket.io/socket.io.js"></script>
+<script src='/javascripts/test.js'></script>
+<script>
+  test();
+  const possibleNotes = new Set(["a", "b", "c", "d", "e", "f", "g", "A", "B", "C", "D", "E", "F", "G"]);
+  const flashcardNames = <%- flashcardNames %>;
+  const flashcard = document.getElementById('flashcard');
+  const isCorrectText = document.getElementById('isCorrectText');
+  const instruction = document.getElementById('instruction');
+  const correctContainer = document.getElementById('correct-container');
+  const secs = document.getElementById('secs');
+  const mins = document.getElementById('mins');
+  const scoreText = document.getElementById('scoreText');
+  let currentNote;
+  let currentNoteLetter;
+  let score = 0;
+  let mode = 'computer';
+
+  const socket = io();
+  socket.on('news', function (data) {
+    console.log(data);
+    socket.emit('my other event', { my: 'data' });
+  });
+
+
+  startBtn.addEventListener('click', function() {
+    flashcard.width = '397';
+    flashcard.height = '500';
+    newFlashcard();
+    startTimer();
+    document.addEventListener('keydown', function(e) {
+      isCorrect(e.key);
+    });
+  });
+
+  function isCorrect(key) {
+    if (mode === 'computer' && !possibleNotes.has(key)) return;
+
+    const keyDoesMatch = mode === 'piano' ? (midiNotesMap[key] === currentNote) :
+      (key === currentNoteLetter);
+
+    if (keyDoesMatch) {
+      console.log('Correct!');
+      setIsCorrectText(true);
+      raiseScore();
+    } else {
+      console.log('Nope! The correct note was', currentNoteLetter, currentNote);
+      setIsCorrectText(false);
+    }
+  }
+
+  function setIsCorrectText(correct) {
+    const color = correct ? 'green' : 'red';
+    if (correct) {
+      isCorrectText.textContent = 'Correct!';
+      isCorrectText.classList.remove('red');
+      instruction.textContent = '';
+      isCorrectText.classList.add('fadein', color);
+      setTimeout(function() {
+        newFlashcard();
+        isCorrectText.textContent = '';
+        isCorrectText.classList.remove('fadein', color);
+      }, 750);
+    } else {
+      isCorrectText.classList.add(color);
+      // debugger;
+      correctContainer.classList.add('fadein');
+      isCorrectText.textContent = 'INCORRECT';
+      instruction.textContent = 'Press the correct key to continue.';
+      setTimeout(function() {
+        correctContainer.classList.remove('fadein');
+      }, 750);
+    }
+  }
+
+  function newFlashcard() {
+    const randIdx = Math.floor(Math.random() * flashcardNames.length);
+    const flashcardName = flashcardNames[randIdx];
+    currentNoteLetter = flashcardName[1];
+    currentNote = flashcardName.slice(1, 3);
+    console.log(currentNoteLetter, currentNote);
+    flashcard.src = '/images/flashcards/' + flashcardName;
+  }
+
+  function startTimer () {
+    let secsPassed = 0;
+    let minsPassed = 0;
+    let secsTensCol = '';
+    setInterval(function() {
+      secsPassed += 1;
+      if (secsPassed === 60) {
+        minsPassed += 1;
+        secsPassed = 0;
+      }
+      if (minsPassed > 0) {
+        mins.textContent = minsPassed + 'm';
+        secsTensCol = secsPassed < 10 ? '0' : '';
+      }
+      secs.textContent = secsTensCol + secsPassed + 's';
+    }, 1000);
+  }
+
+  function raiseScore() {
+    score++;
+    scoreText.textContent = score;
+  }
+</script>
