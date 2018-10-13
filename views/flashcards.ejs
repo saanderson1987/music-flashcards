@@ -1,10 +1,17 @@
 <h1>Music Flashcards</h1>
 <p>Type the correct note displayed.</p>
+<form id='mode-selector-form'>
+  <input checked type="radio" id='radio-mode-computer' name="mode" value="computer">
+  <label for="radio-mode-computer">Computer</label>
+  <input type="radio" id='radio-mode-piano' name="mode" value="piano">
+  <label for="radio-mode-piano">Piano</label>
+</form>
 <button id='startBtn'>Start</button>
 <button id='stopBtn'>Stop</button>
-<p>Timer: <span id='mins'></span><span id='secs'>0s</span></p>
-<p>Score: <span id='scoreText'>0</span></p>
-<br>
+<div id='timer-and-score'>
+  <p>Timer: <span id='mins'></span><span id='secs'>0s</span></p>
+  <p id='score'>Score: <span id='scoreText'>0</span></p>
+</div>
 <div id='correct-container'>
   <h2 id='isCorrectText'></h2>
   <h2 id='instruction'></h2>
@@ -12,6 +19,8 @@
 <img id='flashcard'/>
 <script src="/socket.io/socket.io.js"></script>
 <script src='/javascripts/test.js'></script>
+<script src='/javascripts/midi.js'></script>
+
 <script>
   test();
   const possibleNotes = new Set(["a", "b", "c", "d", "e", "f", "g", "A", "B", "C", "D", "E", "F", "G"]);
@@ -26,7 +35,10 @@
   let currentNote;
   let currentNoteLetter;
   let score = 0;
+  let timerId;
   let mode = 'computer';
+  // let mode = 'piano';
+
 
   const socket = io();
   socket.on('news', function (data) {
@@ -40,16 +52,32 @@
     flashcard.height = '500';
     newFlashcard();
     startTimer();
-    document.addEventListener('keydown', function(e) {
-      isCorrect(e.key);
-    });
+    if (mode === 'computer') {
+      document.addEventListener('keydown', handleKeyDown);
+    }
   });
+
+  stopBtn.addEventListener('click', resetGame);
+
+  const radioModeComputer = document.getElementById('radio-mode-computer');
+  const radioModePiano = document.getElementById('radio-mode-piano');
+  [radioModeComputer, radioModePiano].forEach(radio => {
+    radio.addEventListener('click', function(e) {
+      mode = e.target.value;
+      resetGame()
+    })
+  })
+
+  function handleKeyDown(e) {
+    isCorrect(e.key);
+  }
 
   function isCorrect(key) {
     if (mode === 'computer' && !possibleNotes.has(key)) return;
 
-    const keyDoesMatch = mode === 'piano' ? (midiNotesMap[key] === currentNote) :
-      (key === currentNoteLetter);
+    const keyDoesMatch = mode === 'piano' 
+      ? (midiNotesMap[key] === currentNote) :
+        (key === currentNoteLetter);
 
     if (keyDoesMatch) {
       console.log('Correct!');
@@ -75,7 +103,6 @@
       }, 750);
     } else {
       isCorrectText.classList.add(color);
-      // debugger;
       correctContainer.classList.add('fadein');
       isCorrectText.textContent = 'INCORRECT';
       instruction.textContent = 'Press the correct key to continue.';
@@ -98,7 +125,7 @@
     let secsPassed = 0;
     let minsPassed = 0;
     let secsTensCol = '';
-    setInterval(function() {
+    timerId = setInterval(function() {
       secsPassed += 1;
       if (secsPassed === 60) {
         minsPassed += 1;
@@ -112,8 +139,30 @@
     }, 1000);
   }
 
+  function stopTimer() {
+    clearInterval(timerId);
+    mins.textContent = '';
+    secs.textContent = '0s';
+    resetScore();
+  }
+
+  function resetScore() {
+    score = 0;
+    scoreText.textContent = score;
+  }
+
   function raiseScore() {
     score++;
     scoreText.textContent = score;
   }
+
+  function resetGame() {
+  flashcard.width = '0';
+  flashcard.height = '0';
+  stopTimer();
+  resetScore();
+  if (mode === 'computer') {
+    document.removeEventListener('keydown', handleKeyDown);
+  }
+}
 </script>

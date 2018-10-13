@@ -63,6 +63,7 @@ function onMIDIFailure() {
 function onMIDImessage(message) {
   if (message.data[0] === 144 && message.data[2] > 0) {
     const key = message.data[1];
-    isCorrect(midiNote);
+    console.log(key);
+    isCorrect(key);
   }
 }
