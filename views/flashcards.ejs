@@ -18,11 +18,9 @@
 </div>
 <img id='flashcard'/>
 <script src="/socket.io/socket.io.js"></script>
-<script src='/javascripts/test.js'></script>
 <script src='/javascripts/midi.js'></script>
 
 <script>
-  test();
   const possibleNotes = new Set(["a", "b", "c", "d", "e", "f", "g", "A", "B", "C", "D", "E", "F", "G"]);
   const flashcardNames = <%- flashcardNames %>;
   const flashcard = document.getElementById('flashcard');
@@ -37,15 +35,6 @@
   let score = 0;
   let timerId;
   let mode = 'computer';
-  // let mode = 'piano';
-
-
-  const socket = io();
-  socket.on('news', function (data) {
-    console.log(data);
-    socket.emit('my other event', { my: 'data' });
-  });
-
 
   startBtn.addEventListener('click', function() {
     flashcard.width = '397';
@@ -54,6 +43,8 @@
     startTimer();
     if (mode === 'computer') {
       document.addEventListener('keydown', handleKeyDown);
+    } else {
+      startMIDI()
     }
   });
 

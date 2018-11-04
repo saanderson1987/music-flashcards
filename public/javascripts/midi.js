@@ -39,19 +39,23 @@ const midiNotesMap = {
   '91': 'g6'
 }
 
-if (navigator.requestMIDIAccess) {
-  navigator.requestMIDIAccess({
-    sysex: false
-  }).then(onMIDISuccess, onMIDIFailure);
-} else {
-  console.warn("No MIDI support in your browser");
+function startMIDI() {
+  // does browser have access to the MIDI api?
+  if (navigator.requestMIDIAccess) {
+    navigator.requestMIDIAccess({
+      sysex: false
+    }).then(onMIDISuccess, onMIDIFailure);
+  } else {
+    console.warn("No MIDI support in your browser");
+  }
 }
 
 function onMIDISuccess(midiData) {
-  console.log(midiData);
   midi = midiData;
   const allInputs = midi.inputs.values();
   for (let input = allInputs.next(); input && !input.done; input = allInputs.next()) {
+    // input.value refers to the MIDI device connected. `onmidimessage` is an event handler that is 
+    // called when there is a new midi message from the device.
     input.value.onmidimessage = onMIDImessage;
   }
 }
@@ -61,9 +65,16 @@ function onMIDIFailure() {
 }
 
 function onMIDImessage(message) {
+  // message.data[0] = ON/OFF. 144 = on , 128 = off
+  // message.data[1] = pitch
+  // message.data[2] = velocity (volume)
+  
+  // if mesage is ON and velocity > 0 (Some controllers send an ON message with a 
+  // velocity of 0 instead of sending and OFF event)
   if (message.data[0] === 144 && message.data[2] > 0) {
     const key = message.data[1];
     console.log(key);
     isCorrect(key);
   }
 }
+
